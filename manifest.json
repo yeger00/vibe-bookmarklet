@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Vibe Chat Button",
+  "version": "1.0",
+  "description": "Floating chat button that sends requests to an LLM and runs JS code.",
+  "permissions": ["scripting", "storage"],
+  "host_permissions": ["<all_urls>"],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ]
+} 
