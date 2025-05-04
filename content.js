@@ -115,6 +115,8 @@ chatPanel.innerHTML = `
   <div class="vibe-chat-messages"></div>
   <div class="vibe-chat-input-row">
     <textarea class="vibe-chat-textarea" rows="2" placeholder="Ask me to write JS code..."></textarea>
+    <label style="flex: 1; display: flex; align-items: center; margin-left: 8px; font-size: 13px;">Mock</label>
+    <input type="checkbox" style="margin-right: 4px;">
     <button class="vibe-chat-send-btn">Send</button>
   </div>
 `;
@@ -278,18 +280,54 @@ async function callLLM(prompt, cb) {
   }
 }
 
-// Replace mockLLMRequest with callLLM
+// Add mock/llm toggle next to Send button
+const inputRow = chatPanel.querySelector('.vibe-chat-input-row');
+const mockToggleLabel = document.createElement('label');
+mockToggleLabel.style.display = 'flex';
+mockToggleLabel.style.alignItems = 'center';
+mockToggleLabel.style.marginLeft = '8px';
+mockToggleLabel.style.fontSize = '13px';
+const mockToggle = document.createElement('input');
+mockToggle.type = 'checkbox';
+mockToggle.style.marginRight = '4px';
+mockToggleLabel.appendChild(mockToggle);
+mockToggleLabel.appendChild(document.createTextNode('Mock'));
+inputRow.appendChild(mockToggleLabel);
+
+// Store and load mock/llm mode
+let useMock = false;
+chrome.storage.local.get(['vibeUseMock'], (result) => {
+  if (typeof result.vibeUseMock === 'boolean') {
+    useMock = result.vibeUseMock;
+    mockToggle.checked = useMock;
+  }
+});
+mockToggle.onchange = () => {
+  useMock = mockToggle.checked;
+  chrome.storage.local.set({ vibeUseMock: useMock });
+};
+
+// Send button logic
 sendBtn.onclick = () => {
   const prompt = textarea.value.trim();
   if (!prompt) return;
   appendMessage('user', prompt);
   textarea.value = '';
   sendBtn.disabled = true;
-  callLLM(prompt, (code) => {
-    lastCode = code;
-    appendMessage('vibe', '', code);
-    sendBtn.disabled = false;
-  });
+  if (useMock) {
+    // In mock mode, echo the user input as the code
+    setTimeout(() => {
+      lastCode = prompt;
+      appendMessage('vibe', '', prompt);
+      sendBtn.disabled = false;
+    }, 400);
+  } else {
+    callLLM(prompt, (code) => {
+      lastCode = code;
+      appendMessage('vibe', '', code);
+      sendBtn.disabled = false;
+    });
+  }
 };
 
 chatBtn.onclick = () => {
