@@ -127,26 +127,34 @@ const sendBtn = chatPanel.querySelector('.vibe-chat-send-btn');
 
 let lastCode = '';
 
+function runCodeInPageContext(code) {
+  chrome.runtime.sendMessage({type: 'RUN_CODE', code});
+}
+
 function appendMessage(role, text, code) {
   const msg = document.createElement('div');
   msg.style.marginBottom = '12px';
   if (role === 'user') {
     msg.innerHTML = `<b>You:</b> ${text}`;
   } else {
-    msg.innerHTML = `<b>Vibe:</b><pre style="background:#f3f4f6;padding:8px;border-radius:6px;overflow-x:auto;">${code ? code : text}</pre>`;
+    msg.innerHTML = `<b>Vibe:</b><pre style=\"background:#f3f4f6;padding:8px;border-radius:6px;overflow-x:auto;\">${code ? code : text}</pre>`;
     if (code) {
-      const runBtn = document.createElement('button');
-      runBtn.className = 'vibe-chat-run-btn';
-      runBtn.textContent = 'Run Code';
-      runBtn.onclick = () => {
-        try {
-          // eslint-disable-next-line no-eval
-          eval(code);
-        } catch (e) {
-          alert('Error running code: ' + e.message);
-        }
-      };
-      msg.appendChild(runBtn);
+      const runLink = document.createElement('a');
+      runLink.className = 'vibe-chat-run-btn';
+      runLink.textContent = 'Run Code';
+      runLink.style.display = 'inline-block';
+      runLink.style.textDecoration = 'none';
+      runLink.style.marginTop = '8px';
+      runLink.style.background = '#10b981';
+      runLink.style.color = '#fff';
+      runLink.style.borderRadius = '6px';
+      runLink.style.padding = '6px 10px';
+      runLink.style.fontSize = '13px';
+      runLink.style.cursor = 'pointer';
+      // URI encode the code for the javascript: URL
+      runLink.href = 'javascript:' + encodeURIComponent(code);
+      runLink.target = '_self';
+      msg.appendChild(runLink);
     }
   }
   messagesDiv.appendChild(msg);
