@@ -161,21 +161,131 @@ function appendMessage(role, text, code) {
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
-function mockLLMRequest(prompt, cb) {
-  setTimeout(() => {
-    // Return a sample JS code string
-    const code = `alert('Hello from Vibe! Your prompt was: ${prompt.replace(/'/g, "\'")}');`;
-    cb(code);
-  }, 1200);
+// Settings UI
+const settingsBtn = document.createElement('button');
+settingsBtn.textContent = '⚙️';
+settingsBtn.title = 'LLM Settings';
+settingsBtn.style.position = 'fixed';
+settingsBtn.style.top = 'calc(50% + 60px)';
+settingsBtn.style.right = '24px';
+settingsBtn.style.zIndex = '999999';
+settingsBtn.style.background = '#fff';
+settingsBtn.style.border = '1px solid #d1d5db';
+settingsBtn.style.borderRadius = '50%';
+settingsBtn.style.width = '40px';
+settingsBtn.style.height = '40px';
+settingsBtn.style.display = 'flex';
+settingsBtn.style.alignItems = 'center';
+settingsBtn.style.justifyContent = 'center';
+settingsBtn.style.fontSize = '20px';
+settingsBtn.style.cursor = 'pointer';
+document.body.appendChild(settingsBtn);
+
+const settingsPanel = document.createElement('div');
+settingsPanel.style.position = 'fixed';
+settingsPanel.style.top = '50%';
+settingsPanel.style.left = '50%';
+settingsPanel.style.transform = 'translate(-50%, -50%)';
+settingsPanel.style.background = '#fff';
+settingsPanel.style.border = '1px solid #e5e7eb';
+settingsPanel.style.borderRadius = '12px';
+settingsPanel.style.boxShadow = '0 4px 24px rgba(0,0,0,0.18)';
+settingsPanel.style.zIndex = '1000000';
+settingsPanel.style.padding = '24px 32px';
+settingsPanel.style.display = 'none';
+settingsPanel.innerHTML = `
+  <h2 style=\"margin-top:0\">LLM Settings</h2>
+  <label>OpenAI API Key:<br><input type=\"password\" id=\"vibe-api-key\" style=\"width:100%\"></label><br><br>
+  <label>Model:<br><input type=\"text\" id=\"vibe-model\" value=\"gpt-4o-mini\" style=\"width:100%\"></label><br><br>
+  <label>System Prompt:<br><textarea id=\"vibe-system-prompt\" rows=\"2\" style=\"width:100%\">You are a helpful assistant that writes only valid JavaScript code for the user request, and nothing else. Do not include explanations or markdown formatting. The HTML of the page is provided below.</textarea></label><br><br>
+  <button id=\"vibe-save-settings\">Save</button>
+  <button id=\"vibe-cancel-settings\">Cancel</button>
+`;
+document.body.appendChild(settingsPanel);
+
+settingsBtn.onclick = () => {
+  settingsPanel.style.display = 'block';
+};
+document.getElementById('vibe-cancel-settings').onclick = () => {
+  settingsPanel.style.display = 'none';
+};
+document.getElementById('vibe-save-settings').onclick = () => {
+  const apiKey = document.getElementById('vibe-api-key').value;
+  const model = document.getElementById('vibe-model').value;
+  const systemPrompt = document.getElementById('vibe-system-prompt').value;
+  chrome.storage.local.set({ vibeApiKey: apiKey, vibeModel: model, vibeSystemPrompt: systemPrompt }, () => {
+    settingsPanel.style.display = 'none';
+  });
+};
+
+// Load settings on startup
+let vibeApiKey = '';
+let vibeModel = 'gpt-4o-mini';
+let vibeSystemPrompt = '';
+chrome.storage.local.get(['vibeApiKey', 'vibeModel', 'vibeSystemPrompt'], (result) => {
+  if (result.vibeApiKey) vibeApiKey = result.vibeApiKey;
+  if (result.vibeModel) vibeModel = result.vibeModel;
+  if (result.vibeSystemPrompt) vibeSystemPrompt = result.vibeSystemPrompt;
+  document.getElementById('vibe-api-key').value = vibeApiKey;
+  document.getElementById('vibe-model').value = vibeModel;
+  document.getElementById('vibe-system-prompt').value = vibeSystemPrompt;
+});
+
+// LLM session state
+let conversation = [];
+
+async function callLLM(prompt, cb) {
+  if (!vibeApiKey) {
+    appendMessage('vibe', 'Please set your OpenAI API key in settings.');
+    cb('');
+    return;
+  }
+  // Get the full HTML of the page
+  const html = document.documentElement.outerHTML;
+  // Compose messages
+  const system = vibeSystemPrompt || 'You are a helpful assistant that writes only valid JavaScript code for the user request, and nothing else. Do not include explanations or markdown formatting. The HTML of the page is provided below.';
+  const userPrompt = 'write me a javascript snippet that will: ' + prompt;
+  const messages = [
+    { role: 'system', content: system + '\n\nHTML:\n' + html },
+    ...conversation,
+    { role: 'user', content: userPrompt }
+  ];
+  try {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + vibeApiKey
+      },
+      body: JSON.stringify({
+        model: vibeModel,
+        messages: messages,
+      })
+    });
+    const data = await res.json();
+    if (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
+      const code = data.choices[0].message.content.trim();
+      conversation.push({ role: 'user', content: prompt });
+      conversation.push({ role: 'assistant', content: code });
+      cb(code);
+    } else {
+      appendMessage('vibe', 'No response from LLM.');
+      cb('');
+    }
+  } catch (e) {
+    appendMessage('vibe', 'Error calling LLM: ' + e.message);
+    cb('');
+  }
 }
 
+// Replace mockLLMRequest with callLLM
 sendBtn.onclick = () => {
   const prompt = textarea.value.trim();
   if (!prompt) return;
   appendMessage('user', prompt);
   textarea.value = '';
   sendBtn.disabled = true;
-  mockLLMRequest(prompt, (code) => {
+  callLLM(prompt, (code) => {
     lastCode = code;
     appendMessage('vibe', '', code);
     sendBtn.disabled = false;
