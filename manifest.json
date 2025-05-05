@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Vibe Bookmarklet",
   "version": "1.0",
-  "description": "Enheance your sites with new functionality.",
+  "description": "Enhance your sites with new functionality.",
   "permissions": ["scripting", "storage", "bookmarks"],
   "host_permissions": ["<all_urls>"],
   "content_scripts": [

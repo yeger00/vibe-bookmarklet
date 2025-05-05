@@ -1,13 +1,11 @@
-# Vibe Chat Button Chrome Extension
+# Vibe Bookmarklet - Chrome Extension
 
-A Chrome extension that adds a floating chat button to every page (like Grammarly). Click the button to open a chat panel where you can ask for JavaScript code from an LLM, see the code, and run it in the current page context.
+Enable you to enhance you sites with new functionality.
 
-## Features
-- Floating button on the right side of every page
-- Chat panel with conversation history
-- Text area to send requests
-- LLM (mocked) returns JavaScript code as a response
-- Button to run the returned code in the current page
+## Example
+Example to vibe bookmarklet links from NVD to GHSA and Blusky.
+
+
 
 ## Installation
 1. Clone or download this repository to your computer.
