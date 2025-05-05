@@ -3,7 +3,7 @@
   "name": "Vibe Chat Button",
   "version": "1.0",
   "description": "Floating chat button that sends requests to an LLM and runs JS code.",
-  "permissions": ["scripting", "storage"],
+  "permissions": ["scripting", "storage", "bookmarks"],
   "host_permissions": ["<all_urls>"],
   "content_scripts": [
     {

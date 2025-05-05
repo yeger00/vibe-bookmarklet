@@ -129,10 +129,6 @@ const sendBtn = chatPanel.querySelector('.vibe-chat-send-btn');
 
 let lastCode = '';
 
-function runCodeInPageContext(code) {
-  chrome.runtime.sendMessage({type: 'RUN_CODE', code});
-}
-
 function appendMessage(role, text, code) {
   const msg = document.createElement('div');
   msg.style.marginBottom = '12px';
@@ -140,24 +136,6 @@ function appendMessage(role, text, code) {
     msg.innerHTML = `<b>You:</b> ${text}`;
   } else {
     msg.innerHTML = `<b>Vibe:</b><pre style=\"background:#f3f4f6;padding:8px;border-radius:6px;overflow-x:auto;\">${code ? code : text}</pre>`;
-    if (code) {
-      const runLink = document.createElement('a');
-      runLink.className = 'vibe-chat-run-btn';
-      runLink.textContent = 'Run Code';
-      runLink.style.display = 'inline-block';
-      runLink.style.textDecoration = 'none';
-      runLink.style.marginTop = '8px';
-      runLink.style.background = '#10b981';
-      runLink.style.color = '#fff';
-      runLink.style.borderRadius = '6px';
-      runLink.style.padding = '6px 10px';
-      runLink.style.fontSize = '13px';
-      runLink.style.cursor = 'pointer';
-      // URI encode the code for the javascript: URL
-      runLink.href = 'javascript:' + encodeURIComponent(code);
-      runLink.target = '_self';
-      msg.appendChild(runLink);
-    }
   }
   messagesDiv.appendChild(msg);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
@@ -199,7 +177,7 @@ settingsPanel.innerHTML = `
   <h2 style=\"margin-top:0\">LLM Settings</h2>
   <label>OpenAI API Key:<br><input type=\"password\" id=\"vibe-api-key\" style=\"width:100%\"></label><br><br>
   <label>Model:<br><input type=\"text\" id=\"vibe-model\" value=\"gpt-4o-mini\" style=\"width:100%\"></label><br><br>
-  <label>System Prompt:<br><textarea id=\"vibe-system-prompt\" rows=\"2\" style=\"width:100%\">You are a helpful assistant that writes only valid JavaScript code for the user request, and nothing else. Do not include explanations or markdown formatting. The HTML of the page is provided below.</textarea></label><br><br>
+  <label>System Prompt:<br><textarea id=\"vibe-system-prompt\" rows=\"2\" style=\"width:100%\">You are a helpful assistant that writes only valid bookmarklets (javascript:... URLs) for the user request, and nothing else. Do not include explanations or markdown formatting. The HTML of the page is provided below.</textarea></label><br><br>
   <button id=\"vibe-save-settings\">Save</button>
   <button id=\"vibe-cancel-settings\">Cancel</button>
 `;
@@ -245,8 +223,8 @@ async function callLLM(prompt, cb) {
   // Get the full HTML of the page
   const html = document.documentElement.outerHTML;
   // Compose messages
-  const system = vibeSystemPrompt || 'You are a helpful assistant that writes only valid JavaScript code for the user request, and nothing else. Do not include explanations or markdown formatting. The HTML of the page is provided below.';
-  const userPrompt = 'write me a javascript snippet that will: ' + prompt;
+  const system = vibeSystemPrompt || 'You are a helpful assistant that writes only valid bookmarklets (javascript:... URLs) for the user request, and nothing else. Do not include explanations or markdown formatting. The HTML of the page is provided below.';
+  const userPrompt = 'write me a javascript bookmarklet that will: ' + prompt;
   const messages = [
     { role: 'system', content: system + '\n\nHTML:\n' + html },
     ...conversation,
@@ -320,12 +298,14 @@ sendBtn.onclick = () => {
       lastCode = prompt;
       appendMessage('vibe', '', prompt);
       sendBtn.disabled = false;
+      upsertVibeBookmarklet(prompt);
     }, 400);
   } else {
     callLLM(prompt, (code) => {
       lastCode = code;
       appendMessage('vibe', '', code);
       sendBtn.disabled = false;
+      upsertVibeBookmarklet(code);
     });
   }
 };
@@ -340,4 +320,12 @@ closeBtn.onclick = () => {
 // Optional: close chat on Escape
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') chatPanel.style.display = 'none';
-}); 
+});
+
+function upsertVibeBookmarklet(code) {
+  chrome.runtime.sendMessage({
+    type: 'UPSERT_VIBE_BOOKMARKLET',
+    code,
+    pageTitle: document.title
+  });
+} 
