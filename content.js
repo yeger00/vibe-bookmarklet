@@ -131,7 +131,7 @@ chatPanel.innerHTML = `
   </div>
   <div class="vibe-chat-messages"></div>
   <div class="vibe-chat-input-row">
-    <textarea class="vibe-chat-textarea" rows="2" placeholder="Ask me to write JS code..."></textarea>
+    <textarea class="vibe-chat-textarea" rows="2" placeholder="What bookmarklet do you want?"></textarea>
     <button class="vibe-chat-send-btn">Send</button>
   </div>
 `;
@@ -175,7 +175,6 @@ settingsPanel.innerHTML = `
   <h2 style=\"margin-top:0\">LLM Settings</h2>
   <label>OpenAI API Key:<br><input type=\"password\" id=\"vibe-api-key\" style=\"width:100%\"></label><br><br>
   <label>Model:<br><input type=\"text\" id=\"vibe-model\" value=\"gpt-4o-mini\" style=\"width:100%\"></label><br><br>
-  <label>System Prompt:<br><textarea id=\"vibe-system-prompt\" rows=\"2\" style=\"width:100%\">You are a helpful assistant that writes only valid bookmarklets (javascript:... URLs) for the user request, and nothing else. Do not include explanations or markdown formatting. The HTML of the page is provided below.</textarea></label><br><br>
   <button id=\"vibe-save-settings\">Save</button>
   <button id=\"vibe-cancel-settings\">Cancel</button>
 `;
@@ -192,8 +191,7 @@ document.getElementById('vibe-cancel-settings').onclick = () => {
 document.getElementById('vibe-save-settings').onclick = () => {
   const apiKey = document.getElementById('vibe-api-key').value;
   const model = document.getElementById('vibe-model').value;
-  const systemPrompt = document.getElementById('vibe-system-prompt').value;
-  chrome.storage.local.set({ vibeApiKey: apiKey, vibeModel: model, vibeSystemPrompt: systemPrompt }, () => {
+  chrome.storage.local.set({ vibeApiKey: apiKey, vibeModel: model }, () => {
     settingsPanel.style.display = 'none';
   });
 };
@@ -201,14 +199,11 @@ document.getElementById('vibe-save-settings').onclick = () => {
 // Load settings on startup
 let vibeApiKey = '';
 let vibeModel = 'gpt-4o-mini';
-let vibeSystemPrompt = '';
-chrome.storage.local.get(['vibeApiKey', 'vibeModel', 'vibeSystemPrompt'], (result) => {
+chrome.storage.local.get(['vibeApiKey', 'vibeModel'], (result) => {
   if (result.vibeApiKey) vibeApiKey = result.vibeApiKey;
   if (result.vibeModel) vibeModel = result.vibeModel;
-  if (result.vibeSystemPrompt) vibeSystemPrompt = result.vibeSystemPrompt;
   document.getElementById('vibe-api-key').value = vibeApiKey;
   document.getElementById('vibe-model').value = vibeModel;
-  document.getElementById('vibe-system-prompt').value = vibeSystemPrompt;
 });
 
 // LLM session state
@@ -223,7 +218,7 @@ async function callLLM(prompt, cb) {
   // Get the full HTML of the page
   const html = document.documentElement.outerHTML;
   // Compose messages
-  const system = vibeSystemPrompt || 'You are a helpful assistant that writes only valid bookmarklets (javascript:... URLs) for the user request, and nothing else. Do not include explanations or markdown formatting. The HTML of the page is provided below.';
+  const system = 'You are a helpful assistant that writes only valid bookmarklets (javascript:... URLs) for the user request, and nothing else. Do not include explanations or markdown formatting. The HTML of the page is provided below.';
   const userPrompt = 'write me a javascript bookmarklet that will: ' + prompt;
   const messages = [
     { role: 'system', content: system + '\n\nHTML:\n' + html },
