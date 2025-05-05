@@ -345,8 +345,71 @@ sendBtn.onclick = () => {
   }
 };
 
-chatBtn.onclick = () => {
+// Make the floating chat button draggable and move the chat panel with it
+let chatBtnX = window.innerWidth - 72; // initial right offset
+let chatBtnY = window.innerHeight / 2;
+chatBtn.style.position = 'fixed';
+chatBtn.style.left = chatBtnX + 'px';
+chatBtn.style.top = chatBtnY + 'px';
+chatBtn.style.right = '';
+chatBtn.style.bottom = '';
+
+chatPanel.style.position = 'fixed';
+chatPanel.style.left = (chatBtnX - 340 - 12) + 'px';
+chatPanel.style.top = (chatBtnY - chatPanel.offsetHeight / 2 + 24) + 'px';
+chatPanel.style.right = '';
+chatPanel.style.bottom = '';
+
+function updateChatPanelPosition() {
+  chatPanel.style.left = (chatBtnX - 340 - 12) + 'px';
+  chatPanel.style.top = (chatBtnY - chatPanel.offsetHeight / 2 + 24) + 'px';
+}
+
+let isDragging = false;
+let wasDragging = false;
+let dragOffsetX = 0;
+let dragOffsetY = 0;
+
+chatBtn.addEventListener('mousedown', (e) => {
+  isDragging = true;
+  wasDragging = false;
+  dragOffsetX = e.clientX - chatBtn.getBoundingClientRect().left;
+  dragOffsetY = e.clientY - chatBtn.getBoundingClientRect().top;
+  document.body.style.userSelect = 'none';
+});
+
+document.addEventListener('mousemove', (e) => {
+  if (!isDragging) return;
+  chatBtnX = e.clientX - dragOffsetX;
+  chatBtnY = e.clientY - dragOffsetY;
+  chatBtn.style.left = chatBtnX + 'px';
+  chatBtn.style.top = chatBtnY + 'px';
+  updateChatPanelPosition();
+  wasDragging = true;
+});
+
+document.addEventListener('mouseup', () => {
+  isDragging = false;
+  document.body.style.userSelect = '';
+});
+
+// When window resizes, keep button in view
+window.addEventListener('resize', () => {
+  chatBtnX = Math.min(chatBtnX, window.innerWidth - 48);
+  chatBtnY = Math.min(chatBtnY, window.innerHeight - 48);
+  chatBtn.style.left = chatBtnX + 'px';
+  chatBtn.style.top = chatBtnY + 'px';
+  updateChatPanelPosition();
+});
+
+// When opening chat, update position
+chatBtn.onclick = (e) => {
+  if (wasDragging) {
+    wasDragging = false;
+    return;
+  }
   chatPanel.style.display = chatPanel.style.display === 'none' ? 'flex' : 'none';
+  updateChatPanelPosition();
 };
 closeBtn.onclick = () => {
   chatPanel.style.display = 'none';
