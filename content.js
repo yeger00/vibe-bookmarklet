@@ -36,11 +36,26 @@ style.textContent = `
   border: 1px solid #e5e7eb;
 }
 .vibe-chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
   background: #4f46e5;
   color: #fff;
   padding: 12px 16px;
   font-weight: bold;
   font-size: 16px;
+}
+.vibe-chat-header-title {
+  flex: 1;
+}
+.vibe-chat-header-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+.vibe-chat-header-buttons button {
+  margin-left: 0;
 }
 .vibe-chat-messages {
   flex: 1;
@@ -83,8 +98,7 @@ style.textContent = `
   font-size: 13px;
   margin-top: 8px;
 }
-.vibe-chat-close-btn {
-  position: absolute;
+.vibe-chat-header-btn {
   top: 8px;
   right: 12px;
   background: transparent;
@@ -109,8 +123,11 @@ chatPanel.className = 'vibe-chat-panel';
 chatPanel.style.display = 'none';
 chatPanel.innerHTML = `
   <div class="vibe-chat-header">
-    Vibe Bookmarklet
-    <button class="vibe-chat-close-btn" title="Close">×</button>
+    <span class="vibe-chat-header-title">Vibe Bookmarklet</span>
+    <span class="vibe-chat-header-buttons">
+      <button class="vibe-chat-settings-btn vibe-chat-header-btn" title="LLM Settings">⚙️</button>
+      <button class="vibe-chat-close-btn vibe-chat-header-btn" title="Close">❌</button>
+    </span>
   </div>
   <div class="vibe-chat-messages"></div>
   <div class="vibe-chat-input-row">
@@ -140,24 +157,7 @@ function appendMessage(role, text, code) {
 }
 
 // Settings UI
-const settingsBtn = document.createElement('button');
-settingsBtn.textContent = '⚙️';
-settingsBtn.title = 'LLM Settings';
-settingsBtn.style.position = 'fixed';
-settingsBtn.style.top = 'calc(50% + 60px)';
-settingsBtn.style.right = '24px';
-settingsBtn.style.zIndex = '999999';
-settingsBtn.style.background = '#fff';
-settingsBtn.style.border = '1px solid #d1d5db';
-settingsBtn.style.borderRadius = '50%';
-settingsBtn.style.width = '40px';
-settingsBtn.style.height = '40px';
-settingsBtn.style.display = 'flex';
-settingsBtn.style.alignItems = 'center';
-settingsBtn.style.justifyContent = 'center';
-settingsBtn.style.fontSize = '20px';
-settingsBtn.style.cursor = 'pointer';
-document.body.appendChild(settingsBtn);
+
 
 const settingsPanel = document.createElement('div');
 settingsPanel.style.position = 'fixed';
@@ -181,7 +181,9 @@ settingsPanel.innerHTML = `
 `;
 document.body.appendChild(settingsPanel);
 
-settingsBtn.onclick = () => {
+const headerSettingsBtn = chatPanel.querySelector('.vibe-chat-settings-btn');
+
+headerSettingsBtn.onclick = () => {
   settingsPanel.style.display = 'block';
 };
 document.getElementById('vibe-cancel-settings').onclick = () => {
