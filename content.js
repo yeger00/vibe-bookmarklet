@@ -175,6 +175,7 @@ settingsPanel.innerHTML = `
   <h2 style=\"margin-top:0\">LLM Settings</h2>
   <label>OpenAI API Key:<br><input type=\"password\" id=\"vibe-api-key\" style=\"width:100%\"></label><br><br>
   <label>Model:<br><input type=\"text\" id=\"vibe-model\" value=\"gpt-4o-mini\" style=\"width:100%\"></label><br><br>
+  <label><input type=\"checkbox\" id=\"vibe-mock-toggle\"> Mock mode</label><br><br>
   <button id=\"vibe-save-settings\">Save</button>
   <button id=\"vibe-cancel-settings\">Cancel</button>
 `;
@@ -191,7 +192,9 @@ document.getElementById('vibe-cancel-settings').onclick = () => {
 document.getElementById('vibe-save-settings').onclick = () => {
   const apiKey = document.getElementById('vibe-api-key').value;
   const model = document.getElementById('vibe-model').value;
-  chrome.storage.local.set({ vibeApiKey: apiKey, vibeModel: model }, () => {
+  const mock = document.getElementById('vibe-mock-toggle').checked;
+  chrome.storage.local.set({ vibeApiKey: apiKey, vibeModel: model, vibeUseMock: mock }, () => {
+    useMock = mock;
     settingsPanel.style.display = 'none';
   });
 };
@@ -199,11 +202,14 @@ document.getElementById('vibe-save-settings').onclick = () => {
 // Load settings on startup
 let vibeApiKey = '';
 let vibeModel = 'gpt-4o-mini';
-chrome.storage.local.get(['vibeApiKey', 'vibeModel'], (result) => {
+let useMock = false;
+chrome.storage.local.get(['vibeApiKey', 'vibeModel', 'vibeUseMock'], (result) => {
   if (result.vibeApiKey) vibeApiKey = result.vibeApiKey;
   if (result.vibeModel) vibeModel = result.vibeModel;
+  if (typeof result.vibeUseMock === 'boolean') useMock = result.vibeUseMock;
   document.getElementById('vibe-api-key').value = vibeApiKey;
   document.getElementById('vibe-model').value = vibeModel;
+  document.getElementById('vibe-mock-toggle').checked = useMock;
 });
 
 // LLM session state
@@ -252,33 +258,6 @@ async function callLLM(prompt, cb) {
     cb('');
   }
 }
-
-// Add mock/llm toggle next to Send button
-const inputRow = chatPanel.querySelector('.vibe-chat-input-row');
-const mockToggleLabel = document.createElement('label');
-mockToggleLabel.style.display = 'flex';
-mockToggleLabel.style.alignItems = 'center';
-mockToggleLabel.style.marginLeft = '8px';
-mockToggleLabel.style.fontSize = '13px';
-const mockToggle = document.createElement('input');
-mockToggle.type = 'checkbox';
-mockToggle.style.marginRight = '4px';
-mockToggleLabel.appendChild(mockToggle);
-mockToggleLabel.appendChild(document.createTextNode('Mock'));
-inputRow.appendChild(mockToggleLabel);
-
-// Store and load mock/llm mode
-let useMock = false;
-chrome.storage.local.get(['vibeUseMock'], (result) => {
-  if (typeof result.vibeUseMock === 'boolean') {
-    useMock = result.vibeUseMock;
-    mockToggle.checked = useMock;
-  }
-});
-mockToggle.onchange = () => {
-  useMock = mockToggle.checked;
-  chrome.storage.local.set({ vibeUseMock: useMock });
-};
 
 // Skeleton loader CSS
 const skeletonStyle = document.createElement('style');
@@ -339,6 +318,14 @@ sendBtn.onclick = () => {
     });
   }
 };
+
+// Enable Cmd+Enter (Mac) or Ctrl+Enter to send message
+textarea.addEventListener('keydown', function(e) {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+    sendBtn.onclick();
+    e.preventDefault();
+  }
+});
 
 // Make the floating chat button draggable and move the chat panel with it
 let chatBtnX = window.innerWidth - 72; // initial right offset
