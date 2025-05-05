@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Vibe Chat Button",
+  "name": "Vibe Bookmarklet",
   "version": "1.0",
-  "description": "Floating chat button that sends requests to an LLM and runs JS code.",
+  "description": "Enheance your sites with new functionality.",
   "permissions": ["scripting", "storage", "bookmarks"],
   "host_permissions": ["<all_urls>"],
   "content_scripts": [

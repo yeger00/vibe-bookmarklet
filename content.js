@@ -109,14 +109,12 @@ chatPanel.className = 'vibe-chat-panel';
 chatPanel.style.display = 'none';
 chatPanel.innerHTML = `
   <div class="vibe-chat-header">
-    Vibe Chat
+    Vibe Bookmarklet
     <button class="vibe-chat-close-btn" title="Close">×</button>
   </div>
   <div class="vibe-chat-messages"></div>
   <div class="vibe-chat-input-row">
     <textarea class="vibe-chat-textarea" rows="2" placeholder="Ask me to write JS code..."></textarea>
-    <label style="flex: 1; display: flex; align-items: center; margin-left: 8px; font-size: 13px;">Mock</label>
-    <input type="checkbox" style="margin-right: 4px;">
     <button class="vibe-chat-send-btn">Send</button>
   </div>
 `;
@@ -285,6 +283,38 @@ mockToggle.onchange = () => {
   chrome.storage.local.set({ vibeUseMock: useMock });
 };
 
+// Skeleton loader CSS
+const skeletonStyle = document.createElement('style');
+skeletonStyle.textContent = `
+.vibe-skeleton {
+  background: linear-gradient(90deg, #f3f3f3 25%, #e0e0e0 37%, #f3f3f3 63%);
+  background-size: 400% 100%;
+  animation: vibe-skeleton-loading 1.2s ease-in-out infinite;
+  border-radius: 6px;
+  min-height: 32px;
+  width: 100%;
+  margin: 8px 0;
+}
+@keyframes vibe-skeleton-loading {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+`;
+document.head.appendChild(skeletonStyle);
+
+function appendSkeletonLoader() {
+  const msg = document.createElement('div');
+  msg.className = 'vibe-skeleton';
+  msg.setAttribute('data-skeleton', 'true');
+  messagesDiv.appendChild(msg);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  return msg;
+}
+function removeSkeletonLoader() {
+  const skeleton = messagesDiv.querySelector('[data-skeleton="true"]');
+  if (skeleton) skeleton.remove();
+}
+
 // Send button logic
 sendBtn.onclick = () => {
   const prompt = textarea.value.trim();
@@ -292,10 +322,12 @@ sendBtn.onclick = () => {
   appendMessage('user', prompt);
   textarea.value = '';
   sendBtn.disabled = true;
+  const skeleton = appendSkeletonLoader();
   if (useMock) {
     // In mock mode, echo the user input as the code
     setTimeout(() => {
       lastCode = prompt;
+      removeSkeletonLoader();
       appendMessage('vibe', '', prompt);
       sendBtn.disabled = false;
       upsertVibeBookmarklet(prompt);
@@ -303,6 +335,7 @@ sendBtn.onclick = () => {
   } else {
     callLLM(prompt, (code) => {
       lastCode = code;
+      removeSkeletonLoader();
       appendMessage('vibe', '', code);
       sendBtn.disabled = false;
       upsertVibeBookmarklet(code);
