@@ -3,7 +3,11 @@
 Enable you to enhance you sites with new functionality.
 
 ## Example
-Example to vibe bookmarklet links from NVD to GHSA and Blusky.
+Example to vibe bookmarklet links from NVD to GHSA and Blusky:
+
+
+https://github.com/user-attachments/assets/1e30f087-4fd0-48b7-a131-66167c06268f
+
 
 
 
